@@ -1,0 +1,37 @@
+volumes:
+  prometheus_data: {}
+  grafana_data: {}
+services:
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./prometheus/:/etc/prometheus/
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    restart: always
+  grafana:
+    image: grafana/grafana
+    depends_on:
+      - prometheus
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+    restart: always
+  snmpexporter:
+    build: ./snmp_exporter/.
+    depends_on:
+      - prometheus
+    restart: always
+  webfront:
+    image: nginx
+    depends_on:
+      - prometheus
+    ports:
+      - 80:80
+    restart: always
+    volumes:
+      - ./nginxconf:/etc/nginx/conf.d/
